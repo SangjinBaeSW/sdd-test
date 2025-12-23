@@ -29,15 +29,15 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Generate Prisma client
+        run: npx prisma generate
+        working-directory: packages/backend
+
       - name: Build all packages
         run: |
           npm run build -w @project-board/shared
           npm run build -w @project-board/backend
           cd packages/frontend && npx vite build
-
-      - name: Generate Prisma client
-        run: npx prisma generate
-        working-directory: packages/backend
 
       # Example: Deploy to Vercel (Frontend)
       # - name: Deploy Frontend to Vercel
