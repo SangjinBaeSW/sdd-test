@@ -30,6 +30,10 @@ jobs:
       - name: Build shared package
         run: npm run build -w @project-board/shared
 
+      - name: Generate Prisma client
+        run: npx prisma generate
+        working-directory: packages/backend
+
       - name: Type check backend
         run: npm run build -w @project-board/backend
 
@@ -89,11 +93,12 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build all packages
         run: |
           npm run build -w @project-board/shared
+          npx prisma generate --schema=packages/backend/prisma/schema.prisma
           npm run build -w @project-board/backend
           cd packages/frontend && npx vite build
 
