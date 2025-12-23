@@ -1,0 +1,24 @@
+{
+  "name": "project-board",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev -w @project-board/backend",
+    "dev:frontend": "npm run dev -w @project-board/frontend",
+    "build": "npm run build -w @project-board/shared && npm run build -w @project-board/backend && npm run build -w @project-board/frontend",
+    "build:shared": "npm run build -w @project-board/shared",
+    "build:backend": "npm run build -w @project-board/backend",
+    "build:frontend": "npm run build -w @project-board/frontend",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run build:shared && npm run build:backend",
+    "prepare": "husky install || true"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "typescript": "^5.3.3"
+  }
+}

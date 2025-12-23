@@ -1,0 +1,11 @@
+echo "Running pre-commit checks..."
+
+# Build shared package first
+echo "Building shared package..."
+npm run build -w @project-board/shared
+
+# Type check backend
+echo "Type checking backend..."
+npm run build -w @project-board/backend
+
+echo "Pre-commit checks passed!"

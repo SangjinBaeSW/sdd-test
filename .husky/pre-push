@@ -1,0 +1,12 @@
+echo "Running pre-push checks..."
+
+# Full build
+echo "Building all packages..."
+npm run build -w @project-board/shared
+npm run build -w @project-board/backend
+
+# Run tests if available
+echo "Running tests..."
+npm test --if-present
+
+echo "Pre-push checks passed!"

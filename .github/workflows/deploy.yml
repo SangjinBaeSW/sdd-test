@@ -1,0 +1,74 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+
+    # Uncomment when ready for production
+    # environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all packages
+        run: |
+          npm run build -w @project-board/shared
+          npm run build -w @project-board/backend
+          cd packages/frontend && npx vite build
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+        working-directory: packages/backend
+
+      # Example: Deploy to Vercel (Frontend)
+      # - name: Deploy Frontend to Vercel
+      #   uses: amondnet/vercel-action@v25
+      #   with:
+      #     vercel-token: ${{ secrets.VERCEL_TOKEN }}
+      #     vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+      #     vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+      #     working-directory: packages/frontend
+
+      # Example: Deploy to Railway (Backend)
+      # - name: Deploy Backend to Railway
+      #   uses: bervProject/railway-deploy@main
+      #   with:
+      #     railway_token: ${{ secrets.RAILWAY_TOKEN }}
+      #     service: backend
+
+      - name: Deployment placeholder
+        run: |
+          echo "=========================================="
+          echo "Build completed successfully!"
+          echo "=========================================="
+          echo ""
+          echo "To enable deployment, uncomment the"
+          echo "deploy steps and add the required secrets:"
+          echo ""
+          echo "Frontend (Vercel):"
+          echo "  - VERCEL_TOKEN"
+          echo "  - VERCEL_ORG_ID"
+          echo "  - VERCEL_PROJECT_ID"
+          echo ""
+          echo "Backend (Railway):"
+          echo "  - RAILWAY_TOKEN"
+          echo "=========================================="

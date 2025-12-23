@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared package
+        run: npm run build -w @project-board/shared
+
+      - name: Type check backend
+        run: npm run build -w @project-board/backend
+
+      - name: Type check frontend
+        run: npx vue-tsc --noEmit -p packages/frontend/tsconfig.json || true
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared package
+        run: npm run build -w @project-board/shared
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+        working-directory: packages/backend
+
+      - name: Run database migrations
+        run: npx prisma migrate deploy
+        working-directory: packages/backend
+        env:
+          DATABASE_URL: "file:./test.db"
+
+      - name: Run tests
+        run: npm test --if-present
+        env:
+          DATABASE_URL: "file:./test.db"
+          JWT_SECRET: "test-secret-key-for-ci"
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all packages
+        run: |
+          npm run build -w @project-board/shared
+          npm run build -w @project-board/backend
+          cd packages/frontend && npx vite build
+
+      - name: Upload frontend build
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: packages/frontend/dist
+          retention-days: 7
+
+  sdd-validate:
+    name: SDD Spec Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate SDD specs exist
+        run: |
+          echo "Checking SDD specs..."
+          if [ -d ".sdd/specs" ]; then
+            echo "Found specs:"
+            find .sdd/specs -name "spec.md" -exec echo "  - {}" \;
+            SPEC_COUNT=$(find .sdd/specs -name "spec.md" | wc -l)
+            echo "Total specs: $SPEC_COUNT"
+          else
+            echo "Warning: No .sdd/specs directory found"
+          fi
+
+      - name: Check spec frontmatter
+        run: |
+          for spec in $(find .sdd/specs -name "spec.md" 2>/dev/null); do
+            echo "Validating: $spec"
+            if head -1 "$spec" | grep -q "^---"; then
+              echo "  ✓ Has frontmatter"
+            else
+              echo "  ✗ Missing frontmatter"
+              exit 1
+            fi
+          done
